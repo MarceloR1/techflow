@@ -1,4 +1,4 @@
--- TechFlow Normalized Database Schema
+-- TechFlow Database Schema
 
 -- 1. Roles Table
 CREATE TABLE IF NOT EXISTS roles (

@@ -2,49 +2,43 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { initDb } = require('./db');
+require('dotenv').config();
+const { supabase } = require('./supabaseClient');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const SECRET_KEY = 'techflow_secret_key';
+const SECRET_KEY = process.env.SECRET_KEY || 'techflow_secret_key';
 
 app.use(cors());
 app.use(express.json());
 
-let db;
-
-// Initialize DB and Start Server
-initDb().then(database => {
-    db = database;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-});
-
-// Helper: Log action
+// Helper: Log action in Supabase
 async function logAction(userId, action) {
-    if (!db) return;
-    await db.run('INSERT INTO logs (user_id, action) VALUES (?, ?)', [userId, action]);
+    const { error } = await supabase
+        .from('logs')
+        .insert([{ user_id: userId, action }]);
+    if (error) console.error("Error logging action:", error);
 }
 
 // --- AUTH MODULE ---
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await db.get(`
-            SELECT u.*, r.name as role 
-            FROM users u 
-            JOIN roles r ON u.role_id = r.id 
-            WHERE u.email = ?
-        `, [email]);
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*, roles(name)')
+            .eq('email', email)
+            .single();
 
-        if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+        if (error || !user) return res.status(401).json({ error: 'Usuario no encontrado' });
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
-        const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
-        res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+        const roleName = user.roles ? user.roles.name : 'Sin Rol';
+        const token = jwt.sign({ id: user.id, role: roleName }, SECRET_KEY, { expiresIn: '1h' });
+        
+        res.json({ token, user: { id: user.id, name: user.name, role: roleName } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -53,42 +47,50 @@ app.post('/api/auth/login', async (req, res) => {
 // --- INVENTORY MODULE ---
 app.get('/api/products', async (req, res) => {
     try {
-        const products = await db.all(`
-            SELECT p.*, c.name as category 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id
-        `);
-        
-        // Fetch attributes for each product
-        for (let p of products) {
-            p.attributes = await db.all('SELECT attr_key as key, attr_value as value FROM product_attributes WHERE product_id = ?', [p.id]);
-        }
-        res.json(products);
+        const { data: products, error } = await supabase
+            .from('products')
+            .select('*, categories(name), product_attributes(attr_key, attr_value)');
+
+        if (error) throw error;
+
+        // Map values to match client expectations
+        const mappedProducts = products.map(p => ({
+            ...p,
+            category: p.categories?.name,
+            attributes: p.product_attributes?.map(a => ({ key: a.attr_key, value: a.attr_value })) || []
+        }));
+
+        res.json(mappedProducts);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 app.get('/api/categories', async (req, res) => {
-    const categories = await db.all('SELECT * FROM categories');
+    const { data: categories, error } = await supabase.from('categories').select('*');
+    if (error) return res.status(500).json({ error: error.message });
     res.json(categories);
 });
 
 app.post('/api/products', async (req, res) => {
     const { name, category_id, price, stock, user_id } = req.body;
     try {
-        const result = await db.run(
-            'INSERT INTO products (name, category_id, price, stock) VALUES (?, ?, ?, ?)',
-            [name, category_id, price, stock]
-        );
+        const { data, error } = await supabase
+            .from('products')
+            .insert([{ name, category_id, price, stock }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
         await logAction(user_id, `Agregó el producto: ${name}`);
-        res.json({ id: result.lastID });
+        res.json({ id: data.id });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// AI Attribute Generator (Replacing Description)
+// AI Attribute Generator
 app.post('/api/ai/generate-specs', async (req, res) => {
     const { productName } = req.body;
     setTimeout(() => {
@@ -97,14 +99,12 @@ app.post('/api/ai/generate-specs', async (req, res) => {
             { key: 'Garantía', value: '12 Meses' },
             { key: 'Estado', value: 'Nuevo Sellado' }
         ];
-        
         const lowerName = productName.toLowerCase();
         if (lowerName.includes('laptop')) {
             specs.push({ key: 'CPU', value: 'Intel Core i7 / M2' }, { key: 'RAM', value: '16GB DDR5' });
         } else if (lowerName.includes('phone')) {
             specs.push({ key: 'Pantalla', value: 'OLED 120Hz' }, { key: 'Cámara', value: '48MP Triple' });
         }
-
         res.json({ specs });
     }, 1000);
 });
@@ -113,10 +113,19 @@ app.post('/api/products/:id/attributes', async (req, res) => {
     const { id } = req.params;
     const { specs, user_id } = req.body;
     try {
-        await db.run('DELETE FROM product_attributes WHERE product_id = ?', [id]);
-        for (const s of specs) {
-            await db.run('INSERT INTO product_attributes (product_id, attr_key, attr_value) VALUES (?, ?, ?)', [id, s.key, s.value]);
-        }
+        // Delete existing attributes
+        await supabase.from('product_attributes').delete().eq('product_id', id);
+        
+        // Insert new ones
+        const attributesToInsert = specs.map(s => ({
+            product_id: id,
+            attr_key: s.key,
+            attr_value: s.value
+        }));
+        
+        const { error } = await supabase.from('product_attributes').insert(attributesToInsert);
+        if (error) throw error;
+
         await logAction(user_id, `Actualizó especificaciones IA del producto ID: ${id}`);
         res.json({ success: true });
     } catch (err) {
@@ -129,68 +138,86 @@ app.post('/api/billing/invoice', async (req, res) => {
     const { client, items, userId } = req.body; 
     
     try {
-        await db.run('BEGIN TRANSACTION');
+        // 1. Handle Client (Check or Create)
+        let { data: existingClient } = await supabase
+            .from('clients')
+            .select('id')
+            .eq('nit_dni', client.nit_dni)
+            .single();
 
-        let clientId;
-        const existingClient = await db.get('SELECT id FROM clients WHERE nit_dni = ?', [client.nit_dni]);
-        if (existingClient) {
-            clientId = existingClient.id;
-        } else {
-            const clientRes = await db.run('INSERT INTO clients (name, nit_dni, address) VALUES (?, ?, ?)', 
-                [client.name, client.nit_dni, client.address]);
-            clientId = clientRes.lastID;
+        let clientId = existingClient?.id;
+        if (!clientId) {
+            const { data: newClient, error: cErr } = await supabase
+                .from('clients')
+                .insert([{ name: client.name, nit_dni: client.nit_dni, address: client.address }])
+                .select()
+                .single();
+            if (cErr) throw cErr;
+            clientId = newClient.id;
         }
 
         const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const invoiceRes = await db.run('INSERT INTO invoices (client_id, user_id, total) VALUES (?, ?, ?)',
-            [clientId, userId, total]);
-        const invoiceId = invoiceRes.lastID;
 
+        // 2. Create Invoice
+        const { data: invoice, error: iErr } = await supabase
+            .from('invoices')
+            .insert([{ client_id: clientId, user_id: userId, total }])
+            .select()
+            .single();
+        if (iErr) throw iErr;
+
+        // 3. Invoice Details & Stock Update
         for (const item of items) {
-            await db.run(`
-                INSERT INTO invoice_details (invoice_id, product_id, quantity, price_at_sale, subtotal) 
-                VALUES (?, ?, ?, ?, ?)`,
-                [invoiceId, item.id, item.quantity, item.price, item.price * item.quantity]);
+            await supabase.from('invoice_details').insert([{
+                invoice_id: invoice.id,
+                product_id: item.id,
+                quantity: item.quantity,
+                price_at_sale: item.price,
+                subtotal: item.price * item.quantity
+            }]);
             
-            await db.run('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
+            // Stock Update (Atomic update would be better via RPC, but for demo we do it here)
+            const { data: prod } = await supabase.from('products').select('stock').eq('id', item.id).single();
+            await supabase.from('products').update({ stock: prod.stock - item.quantity }).eq('id', item.id);
         }
 
-        await db.run('INSERT INTO accounting_entries (invoice_id, amount, type, reference) VALUES (?, ?, ?, ?)',
-            [invoiceId, total, 'Ingreso', `Factura #${invoiceId} - Cliente: ${client.name}`]);
+        // 4. Accounting Entry
+        await supabase.from('accounting_entries').insert([{
+            invoice_id: invoice.id,
+            amount: total,
+            type: 'Ingreso',
+            reference: `Factura #${invoice.id} - Cliente: ${client.name}`
+        }]);
 
-        await logAction(userId, `Generó Factura #${invoiceId} por $${total}`);
+        await logAction(userId, `Generó Factura #${invoice.id} por $${total}`);
 
-        await db.run('COMMIT');
-        res.json({ success: true, invoiceId });
+        res.json({ success: true, invoiceId: invoice.id });
     } catch (err) {
-        await db.run('ROLLBACK');
         res.status(500).json({ error: err.message });
     }
 });
 
-// --- USER MANAGEMENT ---
+// --- MANAGEMENT ---
 app.get('/api/users', async (req, res) => {
-    const users = await db.all(`
-        SELECT u.id, u.name, u.email, r.name as role 
-        FROM users u 
-        JOIN roles r ON u.role_id = r.id
-    `);
-    res.json(users);
+    const { data, error } = await supabase.from('users').select('id, name, email, roles(name)');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data.map(u => ({ ...u, role: u.roles?.name })));
 });
 
 app.get('/api/roles', async (req, res) => {
-    const roles = await db.all('SELECT * FROM roles');
-    res.json(roles);
+    const { data, error } = await supabase.from('roles').select('*');
+    res.json(data);
 });
 
 app.post('/api/users', async (req, res) => {
     const { name, email, password, role_id, adminId } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await db.run(
-            'INSERT INTO users (name, email, password, role_id) VALUES (?, ?, ?, ?)',
-            [name, email, hashedPassword, role_id]
-        );
+        const { error } = await supabase
+            .from('users')
+            .insert([{ name, email, password: hashedPassword, role_id }]);
+        
+        if (error) throw error;
         await logAction(adminId, `Creó el usuario: ${name}`);
         res.json({ success: true });
     } catch (err) {
@@ -198,37 +225,26 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
-// --- CLIENT MANAGEMENT ---
 app.get('/api/clients', async (req, res) => {
-    const clients = await db.all('SELECT * FROM clients');
-    res.json(clients);
-});
-
-app.post('/api/clients', async (req, res) => {
-    const { name, nit_dni, address, userId } = req.body;
-    try {
-        await db.run(
-            'INSERT INTO clients (name, nit_dni, address) VALUES (?, ?, ?)',
-            [name, nit_dni, address]
-        );
-        await logAction(userId, `Registró al cliente: ${name}`);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const { data, error } = await supabase.from('clients').select('*');
+    res.json(data);
 });
 
 app.get('/api/accounting', async (req, res) => {
-    const entries = await db.all('SELECT * FROM accounting_entries ORDER BY date DESC');
-    res.json(entries);
+    const { data, error } = await supabase.from('accounting_entries').select('*').order('date', { ascending: false });
+    res.json(data);
 });
 
 app.get('/api/logs', async (req, res) => {
-    const logs = await db.all(`
-        SELECT l.*, u.name as user_name 
-        FROM logs l 
-        JOIN users u ON l.user_id = u.id 
-        ORDER BY l.timestamp DESC
-    `);
-    res.json(logs);
+    const { data, error } = await supabase
+        .from('logs')
+        .select('*, users(name)')
+        .order('timestamp', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data.map(l => ({ ...l, user_name: l.users?.name })));
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} with Supabase Connection`);
 });
