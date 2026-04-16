@@ -13,7 +13,7 @@ const Clients = ({ user }) => {
 
     const fetchClients = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/clients');
+            const res = await axios.get('/api/clients');
             setClients(res.data);
         } catch (err) {
             console.error(err);
@@ -25,7 +25,7 @@ const Clients = ({ user }) => {
     const handleAddClient = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/clients', { ...newClient, userId: user.id });
+            await axios.post('/api/clients', { ...newClient, userId: user.id });
             setNewClient({ name: '', nit_dni: '', address: '' });
             fetchClients();
         } catch (err) {

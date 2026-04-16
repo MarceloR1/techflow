@@ -8,7 +8,7 @@ const LandingPage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/products')
+        axios.get('/api/products')
             .then(res => setProducts(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));

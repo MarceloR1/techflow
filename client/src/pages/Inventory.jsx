@@ -17,8 +17,8 @@ const Inventory = ({ user }) => {
     const fetchData = async () => {
         try {
             const [prodRes, catRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/products'),
-                axios.get('http://localhost:5000/api/categories')
+                axios.get('/api/products'),
+                axios.get('/api/categories')
             ]);
             setProducts(prodRes.data);
             setCategories(catRes.data);
@@ -35,7 +35,7 @@ const Inventory = ({ user }) => {
     const handleAdd = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/products', { ...newItem, user_id: user.id });
+            await axios.post('/api/products', { ...newItem, user_id: user.id });
             setNewItem({ name: '', category_id: categories[0]?.id || '', price: '', stock: '' });
             fetchData();
         } catch (err) {
@@ -46,8 +46,8 @@ const Inventory = ({ user }) => {
     const handleGenerateSpecs = async (product) => {
         setGenerating(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/ai/generate-specs', { productName: product.name });
-            await axios.post(`http://localhost:5000/api/products/${product.id}/attributes`, { specs: res.data.specs, user_id: user.id });
+            const res = await axios.post('/api/ai/generate-specs', { productName: product.name });
+            await axios.post(`/api/products/${product.id}/attributes`, { specs: res.data.specs, user_id: user.id });
             fetchData();
             setSelectedProduct(null);
         } catch (err) {

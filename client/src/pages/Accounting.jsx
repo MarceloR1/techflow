@@ -7,7 +7,7 @@ const Accounting = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/accounting')
+        axios.get('/api/accounting')
             .then(res => setEntries(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));

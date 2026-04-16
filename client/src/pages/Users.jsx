@@ -15,8 +15,8 @@ const Users = ({ user: currentUser }) => {
     const fetchData = async () => {
         try {
             const [usersRes, rolesRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/users'),
-                axios.get('http://localhost:5000/api/roles')
+                axios.get('/api/users'),
+                axios.get('/api/roles')
             ]);
             setUsers(usersRes.data);
             setRoles(rolesRes.data);
@@ -33,7 +33,7 @@ const Users = ({ user: currentUser }) => {
     const handleAddUser = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/users', { ...newUser, adminId: currentUser.id });
+            await axios.post('/api/users', { ...newUser, adminId: currentUser.id });
             setNewUser({ name: '', email: '', password: '', role_id: roles[0]?.id || '' });
             fetchData();
         } catch (err) {

@@ -9,7 +9,7 @@ const Billing = ({ user }) => {
     const [success, setSuccess] = useState(false);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/products').then(res => setProducts(res.data));
+        axios.get('/api/products').then(res => setProducts(res.data));
     }, [success]);
 
     const addToCart = (product) => {
@@ -32,7 +32,7 @@ const Billing = ({ user }) => {
         }
 
         try {
-            await axios.post('http://localhost:5000/api/billing/invoice', {
+            await axios.post('/api/billing/invoice', {
                 client,
                 items: cart,
                 userId: user.id

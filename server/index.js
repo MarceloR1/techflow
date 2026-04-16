@@ -245,6 +245,10 @@ app.get('/api/logs', async (req, res) => {
     res.json(data.map(l => ({ ...l, user_name: l.users?.name })));
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} with Supabase Connection`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT} with Supabase Connection`);
+    });
+}
+
+module.exports = app;

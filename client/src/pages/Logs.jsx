@@ -7,7 +7,7 @@ const Logs = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/logs')
+        axios.get('/api/logs')
             .then(res => setLogs(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
