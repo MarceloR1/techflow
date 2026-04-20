@@ -86,7 +86,9 @@ app.get('/api/products', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
+app.get('/api/categories', async (req, res) => {
+    const { data: categories, error } = await supabase.from('categories').select('*');
+    if (error) return res.status(500).json({ error: error.message });
     res.json(categories);
 });
 
