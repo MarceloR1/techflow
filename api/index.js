@@ -72,6 +72,12 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, password } = req.body;
+    
+    // Validación de datos de entrada
+    if (!name || !email || !password) {
+        return res.status(400).json({ error: 'Todos los campos (nombre, correo y contraseña) son obligatorios' });
+    }
+
     try {
         // 1. Get or Create 'Cliente' role
         let { data: role, error: rErr } = await supabase
@@ -94,16 +100,22 @@ app.post('/api/auth/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const { error: uErr } = await supabase
             .from('users')
-            .insert([{ name, email, password: hashedPassword, role_id: role.id }]);
+            .insert([{ 
+                name: name.trim(), 
+                email: email.trim().toLowerCase(), 
+                password: hashedPassword, 
+                role_id: role.id 
+            }]);
 
         if (uErr) {
-            if (uErr.code === '23505') return res.status(400).json({ error: 'El correo ya está registrado' });
+            if (uErr.code === '23505') return res.status(400).json({ error: 'Este correo electrónico ya está en uso' });
             throw uErr;
         }
 
-        res.json({ success: true, message: 'Cuenta creada con éxito. Ahora puedes iniciar sesión.' });
+        res.json({ success: true, message: '¡Cuenta creada con éxito!' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("REGISTRATION ERROR:", err.message);
+        res.status(500).json({ error: 'Hubo un problema al crear la cuenta. Por favor, intenta de nuevo.' });
     }
 });
 
