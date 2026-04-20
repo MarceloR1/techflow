@@ -122,22 +122,39 @@ app.post('/api/auth/register', async (req, res) => {
 // --- INVENTORY MODULE ---
 app.get('/api/products', async (req, res) => {
     try {
+        console.log("FETCHING PRODUCTS...");
         const { data: products, error } = await supabase
             .from('products')
             .select('*, categories(name), product_attributes(attr_key, attr_value)');
 
-        if (error) throw error;
+        if (error) {
+            console.error("SUPABASE FETCH ERROR:", error.message);
+            throw error;
+        }
 
-        // Map values to match client expectations
-        const mappedProducts = products.map(p => ({
-            ...p,
-            category: p.categories?.name,
-            attributes: p.product_attributes?.map(a => ({ key: a.attr_key, value: a.attr_value })) || []
-        }));
+        if (!products) return res.json([]);
+
+        // Mapeo defensivo para evitar errores 500
+        const mappedProducts = products.map(p => {
+            // Manejar categorías (puede venir como objeto o array dependiendo de la versión/config)
+            let categoryName = 'General';
+            if (p.categories) {
+                categoryName = Array.isArray(p.categories) ? p.categories[0]?.name : p.categories.name;
+            }
+
+            return {
+                ...p,
+                category: categoryName || 'General',
+                attributes: Array.isArray(p.product_attributes) 
+                    ? p.product_attributes.map(a => ({ key: a.attr_key, value: a.attr_value })) 
+                    : []
+            };
+        });
 
         res.json(mappedProducts);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("CRITICAL API ERROR (/api/products):", err.message);
+        res.status(500).json({ error: 'No se pudieron cargar los productos', details: err.message });
     }
 });
 app.get('/api/categories', asyncErrorHandler(async (req, res) => {
