@@ -19,7 +19,7 @@
     { "handle": "filesystem" },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/client/index.html"
     }
   ]
 }
