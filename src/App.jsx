@@ -1,27 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { 
-  Package, ShoppingCart, User, ClipboardList, TrendingUp, LogOut, LayoutDashboard, Search, Sparkles, Users as UsersIcon, Contact
+  Package, ShoppingCart, User, ClipboardList, TrendingUp, LogOut, LayoutDashboard, Search, Sparkles, Users as UsersIcon, Contact, Store
 } from 'lucide-react';
 import axios from 'axios';
 
 // Pages
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import Inventory from './pages/Inventory';
 import Billing from './pages/Billing';
 import Accounting from './pages/Accounting';
 import Logs from './pages/Logs';
 import Users from './pages/Users';
 import Clients from './pages/Clients';
+import CustomerStore from './pages/CustomerStore';
 
 const Sidebar = ({ user, handleLogout }) => {
-  if (!user || !user.role) {
-    console.error("User object is invalid:", user);
-    localStorage.removeItem('user');
-    window.location.href = '/login';
-    return null;
-  }
+  if (!user || !user.role) return null;
 
   return (
     <div className="sidebar">
@@ -33,29 +30,43 @@ const Sidebar = ({ user, handleLogout }) => {
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Module: Inventory */}
-        <div>
-          <label style={{ fontSize: '0.7rem', opacity: 0.5, marginLeft: '1rem', marginBottom: '0.5rem', display: 'block' }}>INVENTARIO</label>
-          <Link to="/inventory" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
-            <Package size={20} color="var(--primary)" /> Productos
-          </Link>
-        </div>
-
-        {/* Module: Billing */}
-        <div>
-          <label style={{ fontSize: '0.7rem', opacity: 0.5, marginLeft: '1rem', marginBottom: '0.5rem', display: 'block' }}>FACTURACIÓN</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <Link to="/billing" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
-              <ShoppingCart size={20} color="var(--primary)" /> Nueva Venta
-            </Link>
-            <Link to="/clients" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
-              <Contact size={20} color="var(--primary)" /> Clientes
+        {/* Module: Store (For Clients) */}
+        {user.role === 'Cliente' && (
+          <div>
+            <label style={{ fontSize: '0.7rem', opacity: 0.5, marginLeft: '1rem', marginBottom: '0.5rem', display: 'block' }}>COMPRAS</label>
+            <Link to="/store" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
+              <Store size={20} color="var(--primary)" /> Tienda Virtual
             </Link>
           </div>
-        </div>
+        )}
 
-        {/* Module: Accounting */}
-        {user.role !== 'Vendedor' && (
+        {/* Module: Inventory (Non-Clients) */}
+        {user.role !== 'Cliente' && (
+          <div>
+            <label style={{ fontSize: '0.7rem', opacity: 0.5, marginLeft: '1rem', marginBottom: '0.5rem', display: 'block' }}>INVENTARIO</label>
+            <Link to="/inventory" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
+              <Package size={20} color="var(--primary)" /> Productos
+            </Link>
+          </div>
+        )}
+
+        {/* Module: Billing (Non-Clients) */}
+        {user.role !== 'Cliente' && (
+          <div>
+            <label style={{ fontSize: '0.7rem', opacity: 0.5, marginLeft: '1rem', marginBottom: '0.5rem', display: 'block' }}>FACTURACIÓN</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+              <Link to="/billing" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
+                <ShoppingCart size={20} color="var(--primary)" /> Nueva Venta
+              </Link>
+              <Link to="/clients" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
+                <Contact size={20} color="var(--primary)" /> Clientes
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Module: Accounting (Staff) */}
+        {['Administrador', 'Auditor'].includes(user.role) && (
           <div>
             <label style={{ fontSize: '0.7rem', opacity: 0.5, marginLeft: '1rem', marginBottom: '0.5rem', display: 'block' }}>CONTABILIDAD</label>
             <Link to="/accounting" className="btn btn-outline" style={{ border: 'none', justifyContent: 'flex-start', color: '#fff' }}>
@@ -64,7 +75,7 @@ const Sidebar = ({ user, handleLogout }) => {
           </div>
         )}
 
-        {/* Module: Security */}
+        {/* Module: Security (Admin) */}
         {user.role === 'Administrador' && (
           <div>
             <label style={{ fontSize: '0.7rem', opacity: 0.5, marginLeft: '1rem', marginBottom: '0.5rem', display: 'block' }}>SEGURIDAD</label>
@@ -127,35 +138,50 @@ function App() {
     setUser(null);
   };
 
+  // Helper para redirigir según rol al entrar al dashboard base
+  const RoleBasedRedirect = () => {
+    if (!user) return <Navigate to="/login" />;
+    return user.role === 'Cliente' ? <Navigate to="/store" /> : <Navigate to="/inventory" />;
+  };
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={user ? <Navigate to="/inventory" /> : <LoginPage onLogin={handleLogin} />} />
+        <Route path="/login" element={user ? <RoleBasedRedirect /> : <LoginPage onLogin={handleLogin} />} />
+        <Route path="/register" element={user ? <RoleBasedRedirect /> : <RegisterPage />} />
         
+        {/* Rutas Compartidas/Restringidas */}
         <Route path="/inventory" element={
-          user ? <DashboardLayout user={user} handleLogout={handleLogout}><Inventory user={user} /></DashboardLayout> : <Navigate to="/login" />
+          user && user.role !== 'Cliente' ? <DashboardLayout user={user} handleLogout={handleLogout}><Inventory user={user} /></DashboardLayout> : <RoleBasedRedirect />
         } />
         
+        <Route path="/store" element={
+          user && user.role === 'Cliente' ? <DashboardLayout user={user} handleLogout={handleLogout}><CustomerStore user={user} /></DashboardLayout> : <RoleBasedRedirect />
+        } />
+
         <Route path="/billing" element={
-          user ? <DashboardLayout user={user} handleLogout={handleLogout}><Billing user={user} /></DashboardLayout> : <Navigate to="/login" />
+          user && user.role !== 'Cliente' ? <DashboardLayout user={user} handleLogout={handleLogout}><Billing user={user} /></DashboardLayout> : <RoleBasedRedirect />
         } />
 
         <Route path="/clients" element={
-          user ? <DashboardLayout user={user} handleLogout={handleLogout}><Clients user={user} /></DashboardLayout> : <Navigate to="/login" />
+          user && user.role !== 'Cliente' ? <DashboardLayout user={user} handleLogout={handleLogout}><Clients user={user} /></DashboardLayout> : <RoleBasedRedirect />
         } />
 
         <Route path="/users" element={
-          user?.role === 'Administrador' ? <DashboardLayout user={user} handleLogout={handleLogout}><Users user={user} /></DashboardLayout> : <Navigate to="/login" />
+          user?.role === 'Administrador' ? <DashboardLayout user={user} handleLogout={handleLogout}><Users user={user} /></DashboardLayout> : <RoleBasedRedirect />
         } />
 
         <Route path="/accounting" element={
-          user?.role !== 'Vendedor' ? <DashboardLayout user={user} handleLogout={handleLogout}><Accounting /></DashboardLayout> : <Navigate to="/login" />
+          ['Administrador', 'Auditor'].includes(user?.role) ? <DashboardLayout user={user} handleLogout={handleLogout}><Accounting /></DashboardLayout> : <RoleBasedRedirect />
         } />
 
         <Route path="/logs" element={
-          user?.role === 'Administrador' ? <DashboardLayout user={user} handleLogout={handleLogout}><Logs /></DashboardLayout> : <Navigate to="/login" />
+          user?.role === 'Administrador' ? <DashboardLayout user={user} handleLogout={handleLogout}><Logs /></DashboardLayout> : <RoleBasedRedirect />
         } />
+
+        {/* Fallback */}
+        <Route path="*" element={<RoleBasedRedirect />} />
       </Routes>
     </Router>
   );

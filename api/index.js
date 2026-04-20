@@ -70,6 +70,43 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+app.post('/api/auth/register', async (req, res) => {
+    const { name, email, password } = req.body;
+    try {
+        // 1. Get or Create 'Cliente' role
+        let { data: role, error: rErr } = await supabase
+            .from('roles')
+            .select('id')
+            .eq('name', 'Cliente')
+            .single();
+
+        if (rErr || !role) {
+            const { data: newRole, error: nrErr } = await supabase
+                .from('roles')
+                .insert([{ name: 'Cliente' }])
+                .select()
+                .single();
+            if (nrErr) throw nrErr;
+            role = newRole;
+        }
+
+        // 2. Hash password and insert user
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const { error: uErr } = await supabase
+            .from('users')
+            .insert([{ name, email, password: hashedPassword, role_id: role.id }]);
+
+        if (uErr) {
+            if (uErr.code === '23505') return res.status(400).json({ error: 'El correo ya está registrado' });
+            throw uErr;
+        }
+
+        res.json({ success: true, message: 'Cuenta creada con éxito. Ahora puedes iniciar sesión.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- INVENTORY MODULE ---
 app.get('/api/products', async (req, res) => {
     try {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { User, Lock, ArrowRight, ShieldCheck, UserPlus } from 'lucide-react';
 import axios from 'axios';
 
 const LoginPage = ({ onLogin }) => {
@@ -16,8 +16,15 @@ const LoginPage = ({ onLogin }) => {
         setError('');
         try {
             const res = await axios.post('/api/auth/login', { email, password });
-            onLogin(res.data.user);
-            navigate('/inventory');
+            const userData = res.data.user;
+            onLogin(userData);
+            
+            // Redirección inteligente por rol
+            if (userData.role === 'Cliente') {
+                navigate('/store');
+            } else {
+                navigate('/inventory');
+            }
         } catch (err) {
             setError(err.response?.data?.error || 'Error al iniciar sesión');
         } finally {
@@ -52,8 +59,12 @@ const LoginPage = ({ onLogin }) => {
                         {loading ? 'Validando...' : 'Entrar al Sistema'} <ArrowRight size={20} />
                     </button>
                     
-                    <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Demo Access: admin@techflow.com / admin123</p>
+                    <div style={{ marginTop: '2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                            ¿No tienes cuenta? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>Regístrate gratis</Link>
+                        </p>
+                        <div style={{ height: '1px', background: 'var(--border)', margin: '0.5rem 0' }}></div>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.6 }}>Demo Staff: admin@techflow.com / admin123</p>
                     </div>
                 </form>
             </div>
