@@ -41,6 +41,21 @@ const Users = ({ user: currentUser }) => {
         }
     };
 
+    const handleDeleteUser = async (id) => {
+        if (id === currentUser.id) {
+            alert('No puedes eliminarte a ti mismo por seguridad.');
+            return;
+        }
+        if (!window.confirm('¿Estás seguro de eliminar este usuario? Esta acción quedará registrada en la bitácora.')) return;
+        try {
+            await axios.delete(`/api/users/${id}?adminId=${currentUser.id}`);
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Error al eliminar usuario');
+        }
+    };
+
     return (
         <div>
             <h1>Gestión de Usuarios (Relacional)</h1>
@@ -82,6 +97,7 @@ const Users = ({ user: currentUser }) => {
                             <th>Email</th>
                             <th>Rol</th>
                             <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -96,6 +112,11 @@ const Users = ({ user: currentUser }) => {
                                 <td>{u.email}</td>
                                 <td><span className={`tag ${u.role === 'Administrador' ? 'tag-purple' : 'tag-blue'}`}>{u.role}</span></td>
                                 <td><span className="tag tag-green">Activo</span></td>
+                                <td>
+                                    <button onClick={() => handleDeleteUser(u.id)} className="btn" style={{ padding: '5px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }} title="Eliminar Usuario">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

@@ -87,10 +87,18 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-app.get('/api/categories', async (req, res) => {
-    const { data: categories, error } = await supabase.from('categories').select('*');
-    if (error) return res.status(500).json({ error: error.message });
     res.json(categories);
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabase.from('categories').delete().eq('id', id);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'No se puede borrar una categoría que tiene productos asociados' });
+    }
 });
 
 app.post('/api/products', async (req, res) => {
@@ -106,6 +114,24 @@ app.post('/api/products', async (req, res) => {
 
         await logAction(user_id, `Agregó el producto: ${name}`);
         res.json({ id: data.id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+    const { id } = req.params;
+    const { user_id } = req.query; // Assuming user_id is sent for logging
+    try {
+        // 1. Delete associated attributes first
+        await supabase.from('product_attributes').delete().eq('product_id', id);
+        
+        // 2. Delete the product
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) throw error;
+
+        await logAction(user_id, `Eliminó el producto ID: ${id}`);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -240,6 +266,20 @@ app.post('/api/users', async (req, res) => {
         
         if (error) throw error;
         await logAction(adminId, `Creó el usuario: ${name}`);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const { adminId } = req.query;
+    try {
+        const { error } = await supabase.from('users').delete().eq('id', id);
+        if (error) throw error;
+
+        await logAction(adminId, `Eliminó al usuario ID: ${id}`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });

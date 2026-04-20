@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Sparkles, RefreshCcw, Settings, Info } from 'lucide-react';
+import { Package, Plus, Sparkles, RefreshCcw, Settings, Info, Trash2 } from 'lucide-react';
 import axios from 'axios';
 
 const Inventory = ({ user }) => {
@@ -57,6 +57,17 @@ const Inventory = ({ user }) => {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.')) return;
+        try {
+            await axios.delete(`/api/products/${id}?user_id=${user.id}`);
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Error al eliminar producto: ' + (err.response?.data?.error || err.message));
+        }
+    };
+
     return (
         <div>
             <h1>Gestión de Inventario (Normalizado)</h1>
@@ -103,9 +114,14 @@ const Inventory = ({ user }) => {
                                         </div>
                                     </td>
                                     <td>
-                                        <button onClick={() => handleGenerateSpecs(p)} className="btn btn-primary" style={{ padding: '5px 10px', fontSize: '0.8rem' }} disabled={generating}>
-                                            <Sparkles size={14} /> AI Specs
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={() => handleGenerateSpecs(p)} className="btn btn-primary" style={{ padding: '5px 10px', fontSize: '0.8rem' }} disabled={generating}>
+                                                <Sparkles size={14} /> AI Specs
+                                            </button>
+                                            <button onClick={() => handleDelete(p.id)} className="btn" style={{ padding: '5px 10px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }}>
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
