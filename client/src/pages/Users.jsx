@@ -7,6 +7,7 @@ const Users = ({ user: currentUser }) => {
     const [roles, setRoles] = useState([]);
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role_id: '' });
     const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -32,12 +33,17 @@ const Users = ({ user: currentUser }) => {
 
     const handleAddUser = async (e) => {
         e.preventDefault();
+        setProcessing(true);
         try {
             await axios.post('/api/users', { ...newUser, adminId: currentUser.id });
             setNewUser({ name: '', email: '', password: '', role_id: roles[0]?.id || '' });
             fetchData();
         } catch (err) {
-            alert('Error al crear usuario');
+            console.error(err);
+            const msg = err.response?.data?.details || err.response?.data?.error || err.message;
+            alert('Error al crear usuario: ' + msg);
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -47,12 +53,16 @@ const Users = ({ user: currentUser }) => {
             return;
         }
         if (!window.confirm('¿Estás seguro de eliminar este usuario? Esta acción quedará registrada en la bitácora.')) return;
+        setProcessing(true);
         try {
             await axios.delete(`/api/users/${id}?adminId=${currentUser.id}`);
             fetchData();
         } catch (err) {
             console.error(err);
-            alert('Error al eliminar usuario');
+            const msg = err.response?.data?.details || err.response?.data?.error || err.message;
+            alert('Error al eliminar usuario: ' + msg);
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -84,7 +94,9 @@ const Users = ({ user: currentUser }) => {
                             {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
                     </div>
-                    <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }}>Crear Usuario</button>
+                    <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={processing}>
+                        {processing ? 'Procesando...' : 'Crear Usuario'}
+                    </button>
                 </form>
             </div>
 
@@ -113,7 +125,13 @@ const Users = ({ user: currentUser }) => {
                                 <td><span className={`tag ${u.role === 'Administrador' ? 'tag-purple' : 'tag-blue'}`}>{u.role}</span></td>
                                 <td><span className="tag tag-green">Activo</span></td>
                                 <td>
-                                    <button onClick={() => handleDeleteUser(u.id)} className="btn" style={{ padding: '5px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }} title="Eliminar Usuario">
+                                    <button 
+                                        onClick={() => handleDeleteUser(u.id)} 
+                                        className="btn" 
+                                        style={{ padding: '5px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }} 
+                                        title="Eliminar Usuario"
+                                        disabled={processing}
+                                    >
                                         <Trash2 size={16} />
                                     </button>
                                 </td>

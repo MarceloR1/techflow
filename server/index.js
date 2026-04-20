@@ -12,6 +12,11 @@ const SECRET_KEY = process.env.SECRET_KEY || 'techflow_secret_key';
 app.use(cors());
 app.use(express.json());
 
+// Global Error Handler Middleware
+const asyncErrorHandler = (fn) => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
+
 // Diagnostic endpoint for Vercel deployment
 app.get('/api/health', async (req, res) => {
     try {
@@ -86,11 +91,11 @@ app.get('/api/products', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-app.get('/api/categories', async (req, res) => {
+app.get('/api/categories', asyncErrorHandler(async (req, res) => {
     const { data: categories, error } = await supabase.from('categories').select('*');
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) throw error;
     res.json(categories);
-});
+}));
 
 app.delete('/api/categories/:id', async (req, res) => {
     const { id } = req.params;
@@ -217,6 +222,11 @@ app.post('/api/billing/invoice', async (req, res) => {
 
         // 3. Invoice Details & Stock Update
         for (const item of items) {
+            // Pre-check stock
+            const { data: prod, error: pErr } = await supabase.from('products').select('stock, name').eq('id', item.id).single();
+            if (pErr || !prod) throw new Error(`Producto ${item.id} no encontrado`);
+            if (prod.stock < item.quantity) throw new Error(`Stock insuficiente para: ${prod.name}`);
+
             await supabase.from('invoice_details').insert([{
                 invoice_id: invoice.id,
                 product_id: item.id,
@@ -225,8 +235,6 @@ app.post('/api/billing/invoice', async (req, res) => {
                 subtotal: item.price * item.quantity
             }]);
             
-            // Stock Update (Atomic update would be better via RPC, but for demo we do it here)
-            const { data: prod } = await supabase.from('products').select('stock').eq('id', item.id).single();
             await supabase.from('products').update({ stock: prod.stock - item.quantity }).eq('id', item.id);
         }
 
@@ -247,16 +255,17 @@ app.post('/api/billing/invoice', async (req, res) => {
 });
 
 // --- MANAGEMENT ---
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', asyncErrorHandler(async (req, res) => {
     const { data, error } = await supabase.from('users').select('id, name, email, roles(name)');
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) throw error;
     res.json(data.map(u => ({ ...u, role: u.roles?.name })));
-});
+}));
 
-app.get('/api/roles', async (req, res) => {
+app.get('/api/roles', asyncErrorHandler(async (req, res) => {
     const { data, error } = await supabase.from('roles').select('*');
+    if (error) throw error;
     res.json(data);
-});
+}));
 
 app.post('/api/users', async (req, res) => {
     const { name, email, password, role_id, adminId } = req.body;
@@ -298,14 +307,23 @@ app.get('/api/accounting', async (req, res) => {
     res.json(data);
 });
 
-app.get('/api/logs', async (req, res) => {
+app.get('/api/logs', asyncErrorHandler(async (req, res) => {
     const { data, error } = await supabase
         .from('logs')
         .select('*, users(name)')
         .order('timestamp', { ascending: false });
     
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) throw error;
     res.json(data.map(l => ({ ...l, user_name: l.users?.name })));
+}));
+
+// Final Catch-all Error Handler
+app.use((err, req, res, next) => {
+    console.error("DEBUG ERROR:", err.message);
+    res.status(500).json({ 
+        error: 'Error interno del servidor', 
+        details: process.env.NODE_ENV === 'production' ? null : err.message 
+    });
 });
 
 if (process.env.NODE_ENV !== 'production') {

@@ -7,6 +7,7 @@ const Billing = ({ user }) => {
     const [cart, setCart] = useState([]);
     const [client, setClient] = useState({ name: '', nit_dni: '', address: '' });
     const [success, setSuccess] = useState(false);
+    const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
         axios.get('/api/products').then(res => setProducts(res.data));
@@ -31,6 +32,7 @@ const Billing = ({ user }) => {
             return;
         }
 
+        setProcessing(true);
         try {
             await axios.post('/api/billing/invoice', {
                 client,
@@ -42,7 +44,11 @@ const Billing = ({ user }) => {
             setClient({ name: '', nit_dni: '', address: '' });
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
-            alert('Error al generar la factura: ' + err.response?.data?.error);
+            console.error(err);
+            const msg = err.response?.data?.details || err.response?.data?.error || err.message;
+            alert('Error al generar la factura: ' + msg);
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -125,8 +131,13 @@ const Billing = ({ user }) => {
                                 Factura Generada con Éxito
                             </div>
                         ) : (
-                            <button onClick={handleCheckout} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={cart.length === 0}>
-                                Procesar Factura
+                            <button 
+                                onClick={handleCheckout} 
+                                className="btn btn-primary" 
+                                style={{ width: '100%', justifyContent: 'center' }} 
+                                disabled={cart.length === 0 || processing}
+                            >
+                                {processing ? 'Procesando...' : 'Procesar Factura'}
                             </button>
                         )}
                     </div>

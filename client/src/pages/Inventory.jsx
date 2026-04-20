@@ -8,7 +8,8 @@ const Inventory = ({ user }) => {
     const [loading, setLoading] = useState(true);
     const [newItem, setNewItem] = useState({ name: '', category_id: '', price: '', stock: '' });
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [generating, setGenerating] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [generating, setGenerating] = useState(false); // Specific for AI
 
     useEffect(() => {
         fetchData();
@@ -34,12 +35,16 @@ const Inventory = ({ user }) => {
 
     const handleAdd = async (e) => {
         e.preventDefault();
+        setProcessing(true);
         try {
             await axios.post('/api/products', { ...newItem, user_id: user.id });
             setNewItem({ name: '', category_id: categories[0]?.id || '', price: '', stock: '' });
             fetchData();
         } catch (err) {
+            console.error(err);
             alert('Error al agregar producto');
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -59,12 +64,16 @@ const Inventory = ({ user }) => {
 
     const handleDelete = async (id) => {
         if (!window.confirm('¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.')) return;
+        setProcessing(true);
         try {
             await axios.delete(`/api/products/${id}?user_id=${user.id}`);
             fetchData();
         } catch (err) {
             console.error(err);
-            alert('Error al eliminar producto: ' + (err.response?.data?.error || err.message));
+            const msg = err.response?.data?.details || err.response?.data?.error || err.message;
+            alert('Error al eliminar producto: ' + msg);
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -118,7 +127,7 @@ const Inventory = ({ user }) => {
                                             <button onClick={() => handleGenerateSpecs(p)} className="btn btn-primary" style={{ padding: '5px 10px', fontSize: '0.8rem' }} disabled={generating}>
                                                 <Sparkles size={14} /> AI Specs
                                             </button>
-                                            <button onClick={() => handleDelete(p.id)} className="btn" style={{ padding: '5px 10px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }}>
+                                            <button onClick={() => handleDelete(p.id)} className="btn" style={{ padding: '5px 10px', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }} disabled={processing}>
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
@@ -151,7 +160,9 @@ const Inventory = ({ user }) => {
                                 <label>Stock Inicial</label>
                                 <input type="number" value={newItem.stock} onChange={e => setNewItem({...newItem, stock: e.target.value})} required />
                             </div>
-                            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Guardar</button>
+                            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={processing}>
+                                {processing ? 'Guardando...' : 'Guardar'}
+                            </button>
                         </form>
                     </div>
 
