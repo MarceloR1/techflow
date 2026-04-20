@@ -4,9 +4,7 @@
     {
       "src": "client/package.json",
       "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "config": { "distDir": "dist" }
     },
     {
       "src": "server/index.js",
@@ -15,8 +13,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "/server/index.js"
+      "source": "/api/(.*)",
+      "destination": "server/index.js"
     },
     {
       "source": "/(.*)",

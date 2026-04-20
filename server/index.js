@@ -12,6 +12,27 @@ const SECRET_KEY = process.env.SECRET_KEY || 'techflow_secret_key';
 app.use(cors());
 app.use(express.json());
 
+// Diagnostic endpoint for Vercel deployment
+app.get('/api/health', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('roles').select('id').limit(1);
+        if (error) {
+            return res.status(500).json({ 
+                status: 'ERROR', 
+                message: 'Error conectando con Supabase', 
+                details: error.message 
+            });
+        }
+        res.json({ 
+            status: 'OK', 
+            message: 'Servidor funcionando y conectado a Supabase',
+            db_check: data.length > 0 ? 'Conectado' : 'Tabla roles vacía'
+        });
+    } catch (err) {
+        res.status(500).json({ status: 'CRASH', message: err.message });
+    }
+});
+
 // Helper: Log action in Supabase
 async function logAction(userId, action) {
     const { error } = await supabase
