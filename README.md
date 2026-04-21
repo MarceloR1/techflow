@@ -14,6 +14,17 @@ La aplicación sigue una arquitectura Cliente-Servidor separando responsabilidad
 
 ---
 
+## 💎 Los 4 Módulos Esenciales
+
+TechFlow está construido sobre cuatro pilares fundamentales que garantizan la operatividad completa de la empresa:
+
+1.  📦 **Gestión de Inventario (Almacén)**: Control exhaustivo de stock en tiempo real, categorización avanzada y gestión de especificaciones técnicas.
+2.  🛒 **Punto de Venta y Facturación (B2B)**: Terminal para ventas directas con validación síncrona de existencias y generación de comprobantes.
+3.  🏛️ **Contabilidad y Libro Diario**: Sistema de asientos automáticos que registra cada ingreso financiero para auditorías y balances inmediatos.
+4.  🌐 **Tienda Digital Autogestionada (B2C)**: Portal público donde los clientes pueden registrarse, comprar y descargar sus propias facturas sin intervención manual.
+
+---
+
 ## ⚙️ Características Técnicas Principales
 1. **Transaccionalidad Atómica**: Generación de facturas con validación síncrona de inventario para evitar *over-selling*.
 2. **Registro de Auditoría (Bitácora)**: Logs automáticos de las principales operaciones CRUD vinculados al ID del usuario en sesión.
