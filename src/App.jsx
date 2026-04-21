@@ -94,17 +94,20 @@ const Sidebar = ({ user, handleLogout, collapsed, toggleCollapse, mobileOpen, cl
               <SidebarLink to="/dashboard" icon={LayoutDashboard} active={location.pathname === '/dashboard'} collapsed={collapsed} onClick={closeMobile}>Panel Control</SidebarLink>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {!collapsed && <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '1px', marginBottom: '0.4rem', marginLeft: '0.5rem', opacity: 0.5 }}>OPERACIONES</label>}
+              {!collapsed && <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '1px', marginBottom: '0.4rem', marginLeft: '0.5rem', opacity: 0.5 }}>GESTIÓN DE NEGOCIO</label>}
               <SidebarLink to="/inventory" icon={Package} active={location.pathname === '/inventory'} collapsed={collapsed} onClick={closeMobile}>Almacén</SidebarLink>
               <SidebarLink to="/billing" icon={ShoppingCart} active={location.pathname === '/billing'} collapsed={collapsed} onClick={closeMobile}>Ventas</SidebarLink>
-              <SidebarLink to="/clients" icon={Contact} active={location.pathname === '/clients'} collapsed={collapsed} onClick={closeMobile}>Clientes</SidebarLink>
             </div>
             {['Administrador', 'Auditor'].includes(user.role) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                {!collapsed && <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '1px', marginBottom: '0.4rem', marginLeft: '0.5rem', opacity: 0.5 }}>FINANZAS</label>}
+                {!collapsed && <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '1px', marginBottom: '0.4rem', marginLeft: '0.5rem', opacity: 0.5 }}>FINANZAS Y CONTROL</label>}
                 <SidebarLink to="/accounting" icon={TrendingUp} active={location.pathname === '/accounting'} collapsed={collapsed} onClick={closeMobile}>Contabilidad</SidebarLink>
               </div>
             )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {!collapsed && <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '1px', marginBottom: '0.4rem', marginLeft: '0.5rem', opacity: 0.5 }}>CLIENTES Y CRM</label>}
+              <SidebarLink to="/clients" icon={Contact} active={location.pathname === '/clients'} collapsed={collapsed} onClick={closeMobile}>Cartera</SidebarLink>
+            </div>
             {user.role === 'Administrador' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {!collapsed && <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '1px', marginBottom: '0.4rem', marginLeft: '0.5rem', opacity: 0.5 }}>SISTEMA</label>}

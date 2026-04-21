@@ -17,10 +17,11 @@ const Dashboard = () => {
 
     const fetchData = async () => {
         try {
-            const [p, a, l] = await Promise.all([
+            const [p, a, l, c] = await Promise.all([
                 axios.get('/api/products'),
                 axios.get('/api/accounting'),
-                axios.get('/api/logs')
+                axios.get('/api/logs'),
+                axios.get('/api/clients')
             ]);
             
             const totalIncome = a.data.reduce((s, e) => s + e.amount, 0);
@@ -29,7 +30,7 @@ const Dashboard = () => {
                 products: p.data.length,
                 sales: a.data.length,
                 income: totalIncome,
-                logs: l.data.length
+                clients: c.data.length
             });
             setRecentLogs(l.data.slice(0, 5));
         } catch (err) {
@@ -79,10 +80,10 @@ const Dashboard = () => {
 
             {/* KPI Grid */}
             <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', marginBottom: '3rem' }}>
-                <KpiCard icon={DollarSign} title="Ingresos Brutos" value={`$${stats.income.toFixed(2)}`} color="#10b981" delay={0.1} />
-                <KpiCard icon={ShoppingBag} title="Órdenes Totales" value={stats.sales} color="#8b5cf6" delay={0.2} />
-                <KpiCard icon={Package} title="Catálogo Activo" value={stats.products} color="#3b82f6" delay={0.3} />
-                <KpiCard icon={Activity} title="Eventos Auditables" value={stats.logs} color="#f43f5e" delay={0.4} />
+                <KpiCard icon={DollarSign} title="Finanzas" value={`$${stats.income.toFixed(2)}`} color="#10b981" delay={0.1} />
+                <KpiCard icon={ShoppingBag} title="Ventas" value={stats.sales} color="#8b5cf6" delay={0.2} />
+                <KpiCard icon={Package} title="Logística" value={stats.products} color="#3b82f6" delay={0.3} />
+                <KpiCard icon={Users} title="Clientes" value={stats.clients} color="#f43f5e" delay={0.4} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '2.5rem' }}>
