@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Lock, ArrowRight, ShieldCheck, Zap, Mail, ChevronLeft } from 'lucide-react';
+import { User, Lock, ArrowRight, Zap, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, ChevronLeft, ShieldCheck, Zap } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, ChevronLeft, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useToast } from '../ToastContext';

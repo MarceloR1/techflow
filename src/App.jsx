@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { 
-  Package, ShoppingCart, User, ClipboardList, TrendingUp, LogOut, LayoutDashboard, Search, Sparkles, Users as UsersIcon, Contact, Store, ChevronRight, Bell, Shield
+  Package, ShoppingCart, ClipboardList, TrendingUp, LogOut, LayoutDashboard, Users as UsersIcon, Contact, Store, ChevronRight, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';

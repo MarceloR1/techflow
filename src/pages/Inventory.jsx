@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Sparkles, RefreshCcw, Settings, Info, Trash2, Box, ChevronRight, X, Search } from 'lucide-react';
+import { Package, Plus, Sparkles, RefreshCcw, Info, Trash2, Box, ChevronRight, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useToast } from '../ToastContext';
