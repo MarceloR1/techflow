@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Users as UsersIcon, UserPlus, Trash2, ShieldCheck, 
-    Mail, Lock, User, RefreshCcw, Search, ShieldAlert, Key
+    UserPlus, Trash2, ShieldCheck, 
+    Mail, Lock, User, Search, ShieldAlert, Key
 } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../ToastContext';

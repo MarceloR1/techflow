@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Users, UserPlus, Search, Mail, MapPin, 
-    CreditCard, Phone, Filter, ChevronRight, Contact, 
+    Users, Search, Mail, MapPin, 
+    CreditCard, Filter, ChevronRight, Contact, 
     MoreHorizontal, TrendingUp, Building2, Briefcase
 } from 'lucide-react';
 import axios from 'axios';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Package, Info, CheckCircle, CreditCard, Trash2, Plus, Minus, Search, Sparkles, X, ShoppingBag, Shield } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, Search, Sparkles, X, ShoppingBag, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useToast } from '../ToastContext';
