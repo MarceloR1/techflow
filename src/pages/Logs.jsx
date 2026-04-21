@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Clock, User, Activity, Search, ShieldCheck, Filter, ArrowDownWideZap, AlertCircle } from 'lucide-react';
+import { ClipboardList, Clock, User, Activity, Search, ShieldCheck, Filter, Zap, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
@@ -35,7 +35,7 @@ const Logs = () => {
     const getIcon = (action) => {
         const act = action.toLowerCase();
         if (act.includes('elimin')) return <AlertCircle size={16} color="#f43f5e" />;
-        if (act.includes('venta')) return <ArrowDownWideZap size={16} color="#10b981" />;
+        if (act.includes('venta')) return <Zap size={16} color="#10b981" />;
         return <Activity size={16} color="var(--primary)" />;
     };
 
