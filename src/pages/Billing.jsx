@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, User, Plus, Trash2, CheckCircle, Search, CreditCard, Receipt, Users, Package, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { useToast } from '../App';
+import { useToast } from '../ToastContext';
 
 const Billing = ({ user }) => {
     const [products, setProducts] = useState([]);

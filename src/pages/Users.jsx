@@ -5,7 +5,7 @@ import {
     Mail, Lock, User, RefreshCcw, Search, ShieldAlert, Key
 } from 'lucide-react';
 import axios from 'axios';
-import { useToast } from '../App';
+import { useToast } from '../ToastContext';
 
 const Users = ({ user: currentUser }) => {
     const [users, setUsers] = useState([]);

@@ -6,7 +6,7 @@ import {
     MoreHorizontal, TrendingUp, Building2, Briefcase
 } from 'lucide-react';
 import axios from 'axios';
-import { useToast } from '../App';
+import { useToast } from '../ToastContext';
 
 const Clients = ({ user }) => {
     const [clients, setClients] = useState([]);
