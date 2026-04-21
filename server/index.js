@@ -70,6 +70,46 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+app.post('/api/auth/register', async (req, res) => {
+    const { name, email, password } = req.body;
+    try {
+        // 1. Check if user already exists
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+        
+        if (existingUser) return res.status(400).json({ error: 'El correo ya está registrado' });
+
+        // 2. Get Cliente role ID
+        const { data: role } = await supabase
+            .from('roles')
+            .select('id')
+            .eq('name', 'Cliente')
+            .single();
+        
+        if (!role) throw new Error('El rol "Cliente" no existe en la base de datos');
+
+        // 3. Hash password and insert
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const { data: newUser, error } = await supabase
+            .from('users')
+            .insert([{ name, email, password: hashedPassword, role_id: role.id }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // 4. Log the auto-registration
+        await logAction(newUser.id, "Auto-registro exitoso de cliente");
+
+        res.json({ success: true, message: 'Registro exitoso' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- INVENTORY MODULE ---
 app.get('/api/products', async (req, res) => {
     try {
@@ -192,22 +232,44 @@ app.post('/api/billing/invoice', async (req, res) => {
     const { client, items, userId } = req.body; 
     
     try {
-        // 1. Handle Client (Check or Create)
-        let { data: existingClient } = await supabase
+        // 1. Handle Client (Check or Create with User linkage)
+        let clientId;
+        
+        // Try to find a client linked to this user first
+        const { data: linkedClient } = await supabase
             .from('clients')
             .select('id')
-            .eq('nit_dni', client.nit_dni)
+            .eq('user_id', userId)
             .single();
 
-        let clientId = existingClient?.id;
-        if (!clientId) {
-            const { data: newClient, error: cErr } = await supabase
+        if (linkedClient) {
+            clientId = linkedClient.id;
+        } else {
+            // Check by NIT/DNI as fallback
+            let { data: existingClient } = await supabase
                 .from('clients')
-                .insert([{ name: client.name, nit_dni: client.nit_dni, address: client.address }])
-                .select()
+                .select('id')
+                .eq('nit_dni', client.nit_dni)
                 .single();
-            if (cErr) throw cErr;
-            clientId = newClient.id;
+
+            if (existingClient) {
+                clientId = existingClient.id;
+                // Update with user_id linkage if missing
+                await supabase.from('clients').update({ user_id: userId }).eq('id', clientId);
+            } else {
+                const { data: newClient, error: cErr } = await supabase
+                    .from('clients')
+                    .insert([{ 
+                        name: client.name, 
+                        nit_dni: client.nit_dni, 
+                        address: client.address,
+                        user_id: userId 
+                    }])
+                    .select()
+                    .single();
+                if (cErr) throw cErr;
+                clientId = newClient.id;
+            }
         }
 
         const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);

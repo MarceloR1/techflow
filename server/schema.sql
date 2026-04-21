@@ -6,6 +6,10 @@ CREATE TABLE IF NOT EXISTS roles (
     name TEXT UNIQUE NOT NULL
 );
 
+-- Seed Roles
+INSERT OR IGNORE INTO roles (name) VALUES ('Administrador'), ('Auditor'), ('Ventas'), ('Cliente');
+
+
 -- 2. Users Table
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,8 +51,11 @@ CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     nit_dni TEXT UNIQUE NOT NULL,
-    address TEXT
+    address TEXT,
+    user_id INTEGER,
+    FOREIGN KEY(user_id) REFERENCES users(id)
 );
+
 
 -- 7. Invoices Table
 CREATE TABLE IF NOT EXISTS invoices (
